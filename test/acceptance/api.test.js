@@ -19,20 +19,14 @@ beforeAll(done => {
 
 afterAll(done => {
   server.close()
-
-  done()
 })
 
 describe('Connect endpoint', () => {
   test('accepts the invitation if one is found and replies with "OK!"', () => {
     const invitationId = 123
 
-    const reqListInvititations = nock('https://api.github.com', {
-      reqheaders: {
-        authorization: `token ${githubToken}`
-      }
-    })
-      .get('/user/repository_invitations')
+    const reqListInvititations = nock(/api\.github\.com/)
+      .get(`/user/repository_invitations?access_token=${githubToken}`)
       .reply(200, [
         {
           id: invitationId,
@@ -42,12 +36,8 @@ describe('Connect endpoint', () => {
         }
       ])
 
-    const reqAcceptInvitation = nock('https://api.github.com', {
-      reqheaders: {
-        authorization: `token ${githubToken}`
-      }
-    })
-      .patch(`/user/repository_invitations/${invitationId}`)
+    const reqAcceptInvitation = nock(/api\.github\.com/)
+      .patch(`/user/repository_invitations/${invitationId}?access_token=${githubToken}`)
       .reply(204)
 
     return request('/v2/connect/johndoe/foobar')
@@ -60,12 +50,8 @@ describe('Connect endpoint', () => {
 
   test('returns a 404 and an error message if a matching invitation is not found', () => {
     const invitationId = 123
-    const reqListInvititations = nock('https://api.github.com', {
-      reqheaders: {
-        authorization: `token ${githubToken}`
-      }
-    })
-      .get('/user/repository_invitations')
+    const reqListInvititations = nock(/api\.github\.com/)
+      .get(`/user/repository_invitations?access_token=${githubToken}`)
       .reply(200, [
         {
           id: invitationId,
@@ -75,12 +61,8 @@ describe('Connect endpoint', () => {
         }
       ])
 
-    const reqAcceptInvitation = nock('https://api.github.com', {
-      reqheaders: {
-        authorization: `token ${githubToken}`
-      }
-    })
-      .patch(`/user/repository_invitations/${invitationId}`)
+    const reqAcceptInvitation = nock(/api\.github\.com/)
+      .patch(`/user/repository_invitations/${invitationId}?access_token=${githubToken}`)
       .reply(204)
 
     return request('/v2/connect/johndoe/foobar')
@@ -93,7 +75,7 @@ describe('Connect endpoint', () => {
   })
 })
 
-describe('Entry endpoint', () => {
+describe.only('Entry endpoint', () => {
   test('outputs a RECAPTCHA_CONFIG_MISMATCH error if reCaptcha options do not match (wrong site key)', () => {
     const data = Object.assign({}, helpers.getParameters(), {
       path: 'staticman.yml'
@@ -102,8 +84,8 @@ describe('Entry endpoint', () => {
     const mockConfig = sampleData.config1
       .replace('@reCaptchaSecret@', reCaptchaSecret)
 
-    nock('https://api.github.com', {
-      reqheaders: {
+    nock(/api\.github\.com/, {
+      reqHeaders: {
         Authorization: `token ${githubToken}`
       }
     })
@@ -137,7 +119,7 @@ describe('Entry endpoint', () => {
     return request({
       body: formData,
       method: 'POST',
-      uri: `/v2/entry/${data.username}/${data.repository}/${data.branch}/${data.property}`,
+      uri: '/v2/entry/johndoe/foobar/master/comments',
       headers: {
         'content-type': 'application/x-www-form-urlencoded'
       }
@@ -158,7 +140,7 @@ describe('Entry endpoint', () => {
     const mockConfig = sampleData.config1
       .replace('@reCaptchaSecret@', helpers.encrypt(reCaptchaSecret))
 
-    nock('https://api.github.com', {
+    nock(/api\.github\.com/, {
       reqHeaders: {
         Authorization: `token ${githubToken}`
       }
@@ -211,8 +193,8 @@ describe('Entry endpoint', () => {
       path: 'staticman.yml'
     })
 
-    const mockGetConfig = nock('https://api.github.com', {
-      reqheaders: {
+    const mockGetConfig = nock(/api\.github\.com/, {
+      reqHeaders: {
         Authorization: `token ${githubToken}`
       }
     })

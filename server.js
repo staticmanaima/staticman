@@ -54,6 +54,14 @@ StaticmanAPI.prototype.initialiseRoutes = function () {
     this.controllers.connect
   )
 
+  this.server.get(
+    '/v:version/connect/:service/:username/:repository',
+    this.bruteforce.prevent,
+    this.requireApiVersion([3]),
+    this.requireService(['github']),
+    this.controllers.connect
+  )
+
   // Route: process
   this.server.post(
     '/v:version/entry/:username/:repository/:branch',
@@ -172,15 +180,11 @@ StaticmanAPI.prototype.requireParams = function (params) {
 }
 
 StaticmanAPI.prototype.start = function (callback) {
-  this.instance = this.server.listen(config.get('port'), () => {
-    if (typeof callback === 'function') {
-      callback(config.get('port'))
-    }
-  })
-}
+  const callbackFn = typeof callback === 'function'
+    ? callback.call(this, config.get('port'))
+    : null
 
-StaticmanAPI.prototype.close = function () {
-  this.instance.close()
+  this.server.listen(config.get('port'), callbackFn)
 }
 
 module.exports = StaticmanAPI
